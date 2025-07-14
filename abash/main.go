@@ -15,5 +15,7 @@ func main() {
 	fmt.Print("Your name with abash: ")
 	encryptedIn := crypt.EncryptAbash(input)
 	fmt.Print(encryptedIn)
+	fmt.Print("Decrypted: ")
+	fmt.Print(crypt.EncryptAbash(encryptedIn))
 
 }
