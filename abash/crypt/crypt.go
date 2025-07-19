@@ -1,9 +1,16 @@
 package crypt
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"strings"
 	"unicode"
 )
+
+func MD5Hash(text string) string {
+	hash := md5.Sum([]byte(text))
+	return hex.EncodeToString(hash[:])
+}
 
 func EncryptAbash(input string) string {
 	var b strings.Builder
