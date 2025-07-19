@@ -5,6 +5,8 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
+	"strings"
+	"unicode"
 )
 
 func rotateLeft(b byte) byte {
@@ -25,14 +27,41 @@ func DickTwistEncrypt(plaintext, key string) (string, error) {
 		final := byte((int(twist) + i*3) % 256)
 		result[i] = final
 	}
-	return base64.StdEncoding.EncodeToString(result), nil
+	var b strings.Builder
+	for _, r := range base64.StdEncoding.EncodeToString(result) {
+		if unicode.IsUpper(r) {
+			char := 'Z' - (r - 'A')
+			b.WriteRune(char)
+		} else if unicode.IsLower(r) {
+			char := 'z' - (r - 'a')
+			b.WriteRune(char)
+		} else {
+			b.WriteRune(r)
+		}
+	}
+
+	return b.String(), nil
 }
 func DickTwistDecrypt(ciphertext, key string) (string, error) {
 	if len(key) == 0 {
 		return "", errors.New("key string must not be empty")
 	}
 
-	raw, err := base64.StdEncoding.DecodeString(ciphertext)
+	var b strings.Builder
+	for _, r := range ciphertext {
+		if unicode.IsUpper(r) {
+			char := 'A' + ('Z' - r)
+			b.WriteRune(char)
+		} else if unicode.IsLower(r) {
+			char := 'a' + ('z' - r)
+			b.WriteRune(char)
+		} else {
+			b.WriteRune(r)
+		}
+	}
+	decodedBase64 := b.String()
+
+	raw, err := base64.StdEncoding.DecodeString(decodedBase64)
 	if err != nil {
 		return "", errors.New("failed to decode base64 ciphertext")
 	}
@@ -45,6 +74,7 @@ func DickTwistDecrypt(ciphertext, key string) (string, error) {
 		orig := rot ^ k
 		result[i] = orig
 	}
+
 	return string(result), nil
 }
 func MD5Hash(text string) string {
