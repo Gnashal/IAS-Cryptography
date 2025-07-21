@@ -58,6 +58,7 @@ func DickTwistEncrypt(plaintext, key string) (string, error) {
 		final := byte((int(twist) + i*3) % 256)
 		result[i] = final
 	}
+
 	transposed := transposeBytes(result)
 
 	var b strings.Builder
@@ -71,6 +72,7 @@ func DickTwistEncrypt(plaintext, key string) (string, error) {
 		}
 	}
 
+
 	encryptedRSA, err := rsa.EncryptPKCS1v15(rand.Reader, publicKey, []byte(b.String()))
 	if err != nil {
 		return "", err
@@ -83,6 +85,7 @@ func DickTwistDecrypt(ciphertext, key string) (string, error) {
 	if len(key) == 0 {
 		return "", errors.New("key string must not be empty")
 	}
+
 
 	decodedRSA, err := base64.StdEncoding.DecodeString(ciphertext)
 	if err != nil {
@@ -118,6 +121,7 @@ func DickTwistDecrypt(ciphertext, key string) (string, error) {
 		orig := rot ^ k
 		result[i] = orig
 	}
+
 	return string(result), nil
 }
 
