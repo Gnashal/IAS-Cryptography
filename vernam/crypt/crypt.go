@@ -2,6 +2,8 @@ package crypt
 
 import (
 	"crypto/md5"
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/hex"
 	"errors"
 )
@@ -11,7 +13,22 @@ func MD5Hash(text string) string {
 	return hex.EncodeToString(hash[:])
 }
 
-func EncryptVernam(plaintext, key string) (string, error) {
+func GenerateOTP(length int) ([]byte, string, error) {
+	key := make([]byte, length)
+	_, err := rand.Read(key)
+	if err != nil {
+		return nil, "", err
+	}
+	encoded := base64.RawStdEncoding.EncodeToString(key)
+	return key, encoded, nil
+}
+
+// Decode base64 OTP to raw key bytes
+func DecodeOTP(encoded string) ([]byte, error) {
+	return base64.RawStdEncoding.DecodeString(encoded)
+}
+
+func EncryptVernam(plaintext string, key []byte) (string, error) {
 	if len(plaintext) != len(key) {
 		return "Error", errors.New("plaintext and key must be of the same length")
 	}
@@ -21,7 +38,7 @@ func EncryptVernam(plaintext, key string) (string, error) {
 	}
 	return hex.EncodeToString(ciphertext), nil
 }
-func DecryptVernam(cipherHex, key string) (string, error) {
+func DecryptVernam(cipherHex string, key []byte) (string, error) {
 	cipherBytes, err := hex.DecodeString(cipherHex)
 	if err != nil {
 		return "", err
