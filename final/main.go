@@ -1,17 +1,22 @@
 package main
 
 import (
-	"fmt"
-	"ias/server"
+	"ias/utils"
 	"ias/web"
 	"net/http"
 )
 
 func main() {
-	go server.StartTCPServerRouter()
+	log, err := utils.NewLogger()
+	if err != nil {
+		panic(err)
+	}
+	log.Info("TCP Server Router initialized.")
 
-	http.HandleFunc("/ws", web.WebSocketHandler)
-
-	fmt.Println("Frontend control API listening on :8080")
-	http.ListenAndServe(":8080", nil)
+	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+		web.WebSocketHandler(w, r, log)
+	})
+	log.Info("TCP Server Router starting....")
+	log.Info("Frontend control API listening on :8080")
+	http.ListenAndServe("0.0.0.0:8080", nil)
 }
