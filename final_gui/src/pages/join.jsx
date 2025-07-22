@@ -6,6 +6,7 @@ import backIcon from '../icons/back.svg';
 export function Join() {
     const navigate = useNavigate();
     const {setOtp, loading, otp, handleSubmit} = useJoin();
+    
 
     return (
         <div className="join-container">
