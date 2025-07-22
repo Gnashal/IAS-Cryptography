@@ -3,6 +3,7 @@ package web
 import (
 	"encoding/json"
 	"fmt"
+	"ias/crypt"
 	"ias/utils"
 	"net"
 	"net/http"
@@ -36,7 +37,7 @@ func extractIP(addr string) string {
 	return host
 }
 
-func WebSocketHandler(w http.ResponseWriter, r *http.Request, log *utils.Logger) {
+func WebSocketHandler(w http.ResponseWriter, r *http.Request, log *utils.Logger, c *crypt.Crypt) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	var hostIP string
 	if err != nil {
@@ -44,6 +45,17 @@ func WebSocketHandler(w http.ResponseWriter, r *http.Request, log *utils.Logger)
 		return
 	}
 	defer conn.Close()
+
+	pubKey, err := c.ExportPublicKeyPEM()
+	if err != nil {
+		log.Error("export pubkey: %v", err)
+		return
+	}
+	msg := map[string]string{
+		"type":      "public_key",
+		"publicKey": pubKey,
+	}
+	conn.WriteJSON(msg)
 
 	fmt.Println("Frontend WebSocket connected")
 
@@ -54,7 +66,7 @@ func WebSocketHandler(w http.ResponseWriter, r *http.Request, log *utils.Logger)
 			break
 		}
 
-		var incoming map[string]interface{}
+		var incoming map[string]any
 		err = json.Unmarshal(msg, &incoming)
 		if err != nil {
 			log.Error("Invalid JSON: %v", err)
@@ -117,7 +129,11 @@ func WebSocketHandler(w http.ResponseWriter, r *http.Request, log *utils.Logger)
 
 		case "chat_message":
 			otp := incoming["otp"].(string)
-			payload := incoming["payload"]
+			payload, err := c.DickTwistDecrypt(incoming["payload"].(string), otp)
+			if err != nil {
+				log.Error("Failed to decrypt message: %v", err)
+				continue
+			}
 			log.Info("Payload confirmed: %s", otp)
 			if s, ok := sessions[otp]; ok {
 				if conn == s.host && s.joiner != nil {
