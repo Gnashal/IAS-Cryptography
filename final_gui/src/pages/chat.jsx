@@ -1,32 +1,14 @@
-import { useContext, useState } from 'react';
+import { useContext } from 'react';
 import { WSContext } from '../WebSocketProvider';
-import { useNavigate } from 'react-router-dom';
 import backIcon from '../icons/back.svg';
 import '../styles/chat.css';
 import { useChat } from '../hooks/useChat';
 export function ChatPage() {
-    const { peerIP, role, messages, leaveSession} = useContext(WSContext);
-    const {sendMessage} = useChat();
-    const navigate = useNavigate();
-    const [input, setInput] = useState("");
+    const { peerIP, role, messages} = useContext(WSContext);
+    const {handleKeyPress,handleSend,handleLeaveAndBack,
+      handleDecryptFile ,handleFileChange, input, setInput} = useChat();
 
-    const handleSend = () => {
-    if (input.trim() === "") return; 
-    sendMessage(input.trim());
-    setInput(""); 
-  };
-
-  const handleLeaveAndBack = () => {
-    if (leaveSession) leaveSession(); 
-    navigate('/');           
-};
-
-  const handleKeyPress = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  };
+    
   return (
   <div className="chat-container">
     <div className="chat-sidebar">
@@ -48,17 +30,41 @@ export function ChatPage() {
     <div className="chat-main">
       <div className="chat-window">
         {messages.map((msg, i) => (
-          <div key={i} className={`chat-bubble ${msg.fromSelf ? 'self' : 'peer'}`}>
-            <p>{msg.text}</p>
-            <span className="timestamp">{new Date(msg.timestamp).toLocaleTimeString()}</span>
-          </div>
-        ))}
+        <div key={i} className={`chat-bubble ${msg.fromSelf ? 'self' : 'peer'}`}>
+          {msg.type === "file" ? (
+             <div className="file-bubble">
+              <p><strong>{msg.file.name}</strong></p>
+
+              <a
+                href={`data:${msg.file.mime};base64,${btoa(msg.file.content)}`}
+                download={msg.file.name}
+              >
+                Download
+              </a>
+
+              {msg.file.encrypted && (
+                <button onClick={() => handleDecryptFile(i)}>Decrypt</button>
+              )}
+
+              <span className="timestamp">{new Date(msg.timestamp).toLocaleTimeString()}</span>
+            </div>
+          ) : (
+            <>
+              <p>{msg.text}</p>
+              <span className="timestamp">{new Date(msg.timestamp).toLocaleTimeString()}</span>
+            </>
+          )}
+        </div>
+      ))}
       </div>
+
+      {/* Input area */}
+
 
       <div className="chat-input-container">
         <label className="file-button">
           📎
-            <input type="file" hidden onChange={(e) => console.log(e.target.files)} />
+            <input type="file" hidden onChange={handleFileChange} />
           </label>
 
           <input

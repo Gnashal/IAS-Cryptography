@@ -50,3 +50,13 @@ export function dickTwistEncrypt(plaintext: string, key: string, pemPublicKey: s
 
   return btoa(encrypted);
 }
+
+// export function DickTwistFileEncrypt(content: string, key: string): string {
+//   let encrypted = '';
+//   for (let i = 0; i < content.length; i++) {
+//     const c = content.charCodeAt(i);
+//     const k = key.charCodeAt(i % key.length);
+//     encrypted += String.fromCharCode((c + k) % 256); // simple byte shift
+//   }
+//   return btoa(encrypted); // base64 encode for safe transport
+// }

@@ -19,9 +19,13 @@ export const WebSocketProvider = ({ children }) => {
   const [publicKey, setPublicKey] = useState(null);
   const [messages, setMessages] = useState([]);
 
-  const addMessage = (message) => {
-    setMessages((prevMessages) => [...prevMessages, message]);
-  }
+  const addMessage = (msg, index = null) => {
+    setMessages(prev =>
+      index !== null
+        ? prev.map((m, i) => (i === index ? msg : m))
+        : [...prev, msg]
+    );
+  };
   const leaveSession = () => {
     if (socket.current) {
       socket.current.send(JSON.stringify({ type: "leave_session" }));
@@ -35,8 +39,9 @@ export const WebSocketProvider = ({ children }) => {
 
 // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
-  const ip = "10.16.245.143";
-   const ws = new WebSocket(`ws://${ip}:8080/ws`);
+  // const ip = "10.16.245.143";
+  const localIp = "192.168.68.123"
+   const ws = new WebSocket(`ws://${localIp}:8080/ws`);
     ws.onopen = () => {
       console.log("WebSocket connected ✅");
     };
@@ -69,7 +74,7 @@ export const WebSocketProvider = ({ children }) => {
                     setPublicKey(message.publicKey);
                     console.log('Received public key:', message.publicKey);
                     break;
-                case 'message': {
+                case 'message': 
                 const { payload } = message;
                     console.log(' Chat message received:', payload);
                     addMessage({
@@ -77,10 +82,26 @@ export const WebSocketProvider = ({ children }) => {
                       timestamp: payload.timestamp
                     });
                   break;
-                  }
+                case 'file_received':
+                  const newMessage = {
+                    text: "[File Received]",
+                    type: "file",
+                    fromSelf: false,
+                    timestamp: Date.now(),
+                    file: {
+                      name: message.filename,
+                      mime: message.mimetype,
+                      encrypted: message.encrypted,
+                      content: message.payload,
+                    }
+                  };
+                  setMessages((prev) => [...prev, newMessage]);
+                  break;
+
 
                 default:
                     console.warn('Unhandled WS message:', message);
+                    break;
             }
         };
     ws.onclose = () => {

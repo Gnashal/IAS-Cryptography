@@ -144,6 +144,27 @@ func WebSocketHandler(w http.ResponseWriter, r *http.Request, log *utils.Logger,
 					log.Debug("Payload sent")
 				}
 			}
+		case "file":
+			otp := incoming["otp"].(string)
+			filename := incoming["filename"].(string)
+			encryptedPayload := incoming["content"].(string)
+			encrypted := incoming["encrypted"].(bool)
+
+			// Forward file to other peer
+			if s, ok := sessions[otp]; ok {
+				forward := map[string]any{
+					"type":      "file_received",
+					"filename":  filename,
+					"payload":   encryptedPayload,
+					"encrypted": encrypted,
+				}
+				if conn == s.host && s.joiner != nil {
+					s.joiner.WriteJSON(forward)
+				} else if conn == s.joiner && s.host != nil {
+					s.host.WriteJSON(forward)
+				}
+				log.Info("Encrypted file forwarded: %s", filename)
+			}
 
 		default:
 			log.Info("Unknown WS message type: %v", incoming["type"])
