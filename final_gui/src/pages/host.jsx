@@ -1,12 +1,11 @@
-import { useNavigate } from 'react-router-dom';
 import { useHost } from '../hooks/useHost';
 import backIcon from '../icons/back.svg';
 import '../styles/host.css';
 
 export function Host() {
-    const navigate = useNavigate();
-    const { otp, regenerateOtp } = useHost();
-
+    const { otp, regenerateOtp , navigate} = useHost();
+        
+    
     return (
         <div className="host-container">
             <button
