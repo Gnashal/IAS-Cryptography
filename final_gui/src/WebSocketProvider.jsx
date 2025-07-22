@@ -4,23 +4,39 @@ export const WSContext = createContext({
     role: null,
     peerIP: null,
     otp: null,
+    publicKey: null,
     messages: [],
     addMessage: () => {},
+    leaveSession: () => {},
 });
 
 export const WebSocketProvider = ({ children }) => {
   const [socket, setSocket] = useState(null);
   const [role, setRole] = useState(null);
   const [peerIP, setPeerIP] = useState(null);
+  // eslint-disable-next-line 
   const [otp, setOtp] = useState(null);
+  const [publicKey, setPublicKey] = useState(null);
   const [messages, setMessages] = useState([]);
 
   const addMessage = (message) => {
     setMessages((prevMessages) => [...prevMessages, message]);
   }
+  const leaveSession = () => {
+    if (socket.current) {
+      socket.current.send(JSON.stringify({ type: "leave_session" }));
+      socket.current.close(); // close WebSocket
+      socket.current = null;
+    }
+    setRole(null);
+    setPeerIP(null);
+    setMessages([]);
+  };
 
+// eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
-   const ws = new WebSocket("ws://10.124.90.54:8080/ws");
+  const ip = "10.16.245.143";
+   const ws = new WebSocket(`ws://${ip}:8080/ws`);
     ws.onopen = () => {
       console.log("WebSocket connected ✅");
     };
@@ -49,6 +65,10 @@ export const WebSocketProvider = ({ children }) => {
                       setPeerIP(message.joiner_ip);
                     }
                     break;
+                case 'public_key':
+                    setPublicKey(message.publicKey);
+                    console.log('Received public key:', message.publicKey);
+                    break;
                 case 'message': {
                 const { payload } = message;
                     console.log(' Chat message received:', payload);
@@ -56,7 +76,6 @@ export const WebSocketProvider = ({ children }) => {
                       text: payload.message,
                       timestamp: payload.timestamp
                     });
-        
                   break;
                   }
 
@@ -76,7 +95,8 @@ export const WebSocketProvider = ({ children }) => {
     return () => {
     ws?.close();
   };
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[]);
 
-  return <WSContext.Provider value={{socket, role, peerIP, messages, otp ,addMessage}}>{children}</WSContext.Provider>;
+  return <WSContext.Provider value={{socket, role, peerIP, publicKey, messages,otp,addMessage, leaveSession}}>{children}</WSContext.Provider>;
 };

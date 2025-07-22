@@ -1,26 +1,40 @@
-import { useContext } from "react";
+import { useContext, useEffect } from "react";
 import { WSContext } from "../WebSocketProvider";
+import { dickTwistEncrypt } from "../lib/encrypt.ts";
 
 
 export function useChat() {
-    const { socket, role, peerIP, otp,messages,addMessage } = useContext(WSContext);
+    const { socket, role, peerIP,publicKey ,otp,messages,addMessage } = useContext(WSContext);
 
     if (!socket) {
         console.error("WebSocket context is not available. Ensure you are using the WebSocketProvider.");
     }
+    function fixPemFormat(pem) {
+    return pem
+        .replace(/-----BEGIN PUBLIC KEY-----/, '-----BEGIN PUBLIC KEY-----\n')
+        .replace(/-----END PUBLIC KEY-----/, '\n-----END PUBLIC KEY-----')
+        .replace(/(.{64})/g, '$1\n'); // Add newlines every 64 characters
+}
 
-    const sendMessage = (message) => {
+     const sendMessage = (message) => {
         if (socket && socket.readyState === WebSocket.OPEN) {
+            const plainPayload = {
+                message,
+                timestamp: Date.now(),
+            };
+            const fixedPEM = fixPemFormat(publicKey);
+            console.log(publicKey);
+            console.log("Fixed PEM:", fixedPEM);
+            const encryptedPayload = dickTwistEncrypt(JSON.stringify(plainPayload), otp, publicKey);
+
             const payload = {
                 type: "chat_message",
-                otp,
-                "payload": {
-                    message,
-                    timestamp: Date.now(),
-                },
+                otp: otp,
+                payload: encryptedPayload,
             };
+
             socket.send(JSON.stringify(payload));
-            console.log("✅ Sent chat message:", payload);
+            console.log("✅ Sent ENCRYPTED chat message:", payload);
 
             addMessage({ text: message, timestamp: Date.now(), fromSelf: true });
         } else {
@@ -42,6 +56,11 @@ export function useChat() {
             console.warn("WebSocket is not open. Cannot send file.");
         }
     };
+    useEffect(() => {
+    const chatWindow = document.querySelector('.chat-window');
+    if (chatWindow) chatWindow.scrollTop = chatWindow.scrollHeight;
+    }, [messages]);
+
 
     return { sendMessage, sendFile, role, peerIP, messages, otp};
 }
